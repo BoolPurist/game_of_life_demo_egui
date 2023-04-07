@@ -3,13 +3,10 @@ use std::{
     time::Duration,
 };
 
-use eframe::{
-    egui,
-    epaint::{Pos2, Rect},
-};
+use eframe::{egui, epaint::Pos2};
 mod grid;
 mod timer;
-use grid::{Grid, GridDrawSettings, NeededArea, TextData};
+use grid::{Grid, GridDrawSettings, TextData};
 use timer::Timer;
 
 const INITIAL_NAME: &str = "initial.txt";
@@ -63,7 +60,6 @@ impl eframe::App for GameOfLifeWindow {
                 self.tick_timer.reset();
                 self.grid.tick();
             }
-            let initial_height = ui.available_height();
 
             ui.label(format!("Passed ticks: {}", self.grid.passed_tick()));
             ui.label(format!(
@@ -72,7 +68,7 @@ impl eframe::App for GameOfLifeWindow {
             ));
             ui.separator();
 
-            let y_offset = initial_height - ui.available_height() + 10.;
+            let y_offset = ui.available_rect_before_wrap().min.y;
             let start = Pos2 {
                 x: MARGIN,
                 y: y_offset,

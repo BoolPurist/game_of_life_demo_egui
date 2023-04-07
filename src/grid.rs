@@ -22,7 +22,6 @@ pub struct Grid {
 
 impl Grid {
     pub fn new(text: TextData, drawing: GridDrawSettings) -> Self {
-        let cell_size = drawing.cell_size as f32;
         let (height, width) = (text.height(), text.width());
         let inner = Vec::with_capacity(height * width);
 
@@ -37,25 +36,6 @@ impl Grid {
         for (y, x) in all_coords(height, width) {
             let cell = text.cell_at_y_x(y, x);
 
-            // let y = y as f32;
-            // let x = x as f32;
-            // let min_y = y * cell_size;
-            // let min_x = x * cell_size;
-            // let max_x = min_x + cell_size;
-            // let max_y = min_y + cell_size;
-            //
-            // let shape = RectShape {
-            //     rect: Rect {
-            //         min: Pos2 { x: min_x, y: min_y },
-            //         max: Pos2 { x: max_x, y: max_y },
-            //     },
-            //     rounding: Rounding::default(),
-            //     fill: color,
-            //     stroke: Stroke {
-            //         width: STROKE_WIDTH,
-            //         color: slf.drawing.stroke_color,
-            //     },
-            // };
             slf.inner.push(cell);
         }
 
@@ -68,15 +48,15 @@ impl Grid {
         let mut output = Vec::with_capacity(height * width);
 
         for (y, x) in all_coords(height, width) {
-            let current_cell = self.inner.get(y_x_to_index(width, y, x)).unwrap();
+            let current_cell = *self.inner.get(y_x_to_index(width, y, x)).unwrap();
             let y = y as f32;
             let x = x as f32;
-            let min_y = y * cell_size + start.y;
-            let min_x = x * cell_size + start.x;
+            let min_y = (y * cell_size) + start.y;
+            let min_x = (x * cell_size) + start.x;
             let max_x = min_x + cell_size;
             let max_y = min_y + cell_size;
 
-            let color = self.get_color_for_cell(*current_cell);
+            let color = self.get_color_for_cell(current_cell);
             let shape = RectShape {
                 rect: Rect {
                     min: Pos2 { x: min_x, y: min_y },
