@@ -3,15 +3,19 @@ use std::{
     time::Duration,
 };
 
-use eframe::egui;
+use eframe::{
+    egui,
+    epaint::{Pos2, Rect},
+};
 mod grid;
 mod timer;
-use grid::{Grid, GridDrawSettings, TextData};
+use grid::{Grid, GridDrawSettings, NeededArea, TextData};
 use timer::Timer;
 
 const INITIAL_NAME: &str = "initial.txt";
 const ALIVE_CHAR: char = 'x';
 const DEAD_CHAR: char = '*';
+const MARGIN: f32 = 20.;
 
 fn get_text_input() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(INITIAL_NAME)
@@ -59,7 +63,23 @@ impl eframe::App for GameOfLifeWindow {
                 self.tick_timer.reset();
                 self.grid.tick();
             }
-            ui.painter().extend(self.grid.clone_cells());
+            let initial_height = ui.available_height();
+
+            ui.label(format!("Passed ticks: {}", self.grid.passed_tick()));
+            ui.label(format!(
+                "Tick rate: {} mili seconds",
+                self.tick_timer.interval_as_ms()
+            ));
+            ui.separator();
+
+            let y_offset = initial_height - ui.available_height() + 10.;
+            let start = Pos2 {
+                x: MARGIN,
+                y: y_offset,
+            };
+
+            self.grid.draw_at(ui, start);
+
             ctx.request_repaint();
         });
     }

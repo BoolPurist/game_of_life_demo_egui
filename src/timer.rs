@@ -13,6 +13,10 @@ impl Timer {
         }
     }
 
+    pub fn interval_as_ms(&self) -> u128 {
+        self.interval.as_millis()
+    }
+
     pub fn reset(&mut self) {
         self.last = Instant::now();
     }
