@@ -12,6 +12,7 @@ pub use text_data::TextData;
 
 const STROKE_WIDTH: f32 = 1.;
 
+#[derive(Clone)]
 pub struct Grid {
     all_cells: Vec<LifeCell>,
     drawing: GridDrawSettings,

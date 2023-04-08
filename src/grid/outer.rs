@@ -5,6 +5,7 @@ pub enum LifeCell {
     Alive,
     Dead,
 }
+#[derive(Clone)]
 pub struct GridDrawSettings {
     pub dead_cell_color: Color32,
     pub alive_cell_color: Color32,
