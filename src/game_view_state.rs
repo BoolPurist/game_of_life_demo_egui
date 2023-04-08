@@ -11,10 +11,10 @@ use std::time::Duration;
 mod drawing;
 
 pub struct GameViewState {
-    pub initial_grid: Grid,
-    pub grid: Grid,
-    pub tick_timer: Timer,
-    pub is_paused: bool,
+    initial_grid: Grid,
+    grid: Grid,
+    tick_timer: Timer,
+    is_paused: bool,
 }
 
 impl GameViewState {
