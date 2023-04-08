@@ -13,7 +13,7 @@ pub use text_data::TextData;
 const STROKE_WIDTH: f32 = 1.;
 
 pub struct Grid {
-    inner: Vec<LifeCell>,
+    all_cells: Vec<LifeCell>,
     drawing: GridDrawSettings,
     height: usize,
     width: usize,
@@ -23,23 +23,18 @@ pub struct Grid {
 impl Grid {
     pub fn new(text: TextData, drawing: GridDrawSettings) -> Self {
         let (height, width) = (text.height(), text.width());
-        let inner = Vec::with_capacity(height * width);
+        let mut all_cells = Vec::with_capacity(height * width);
 
-        let mut slf = Self {
-            inner,
+        let initial_cells = all_coords(height, width).map(|(y, x)| text.cell_at_y_x(y, x));
+        all_cells.extend(initial_cells);
+
+        Self {
+            all_cells,
             height,
             width,
             drawing,
             passed_ticks: 0,
-        };
-
-        for (y, x) in all_coords(height, width) {
-            let cell = text.cell_at_y_x(y, x);
-
-            slf.inner.push(cell);
         }
-
-        slf
     }
 
     pub fn draw_at(&self, ui: &mut Ui, start: Pos2) {
@@ -48,7 +43,7 @@ impl Grid {
         let mut output = Vec::with_capacity(height * width);
 
         for (y, x) in all_coords(height, width) {
-            let current_cell = *self.inner.get(y_x_to_index(width, y, x)).unwrap();
+            let current_cell = *self.all_cells.get(y_x_to_index(width, y, x)).unwrap();
             let y = y as f32;
             let x = x as f32;
             let min_y = (y * cell_size) + start.y;
@@ -80,7 +75,7 @@ impl Grid {
         let to_apply = self.calcalute_change();
 
         for (index, new_cell) in to_apply {
-            *self.inner.get_mut(index).unwrap() = new_cell;
+            *self.all_cells.get_mut(index).unwrap() = new_cell;
         }
 
         self.passed_ticks += 1;
@@ -109,10 +104,10 @@ impl Grid {
             (bottom_y, right_x),
         ] {
             let index = y_x_to_index(width, y, x);
-            let current_cell = self.inner.get(index).unwrap_or_else(|| {
+            let current_cell = self.all_cells.get(index).unwrap_or_else(|| {
                 panic!(
                     "Out of bounds index with x and y: ({},{}), width and height ({}, {}), index {} and length {}",
-                    x, y, width, height, index, self.inner.len()
+                    x, y, width, height, index, self.all_cells.len()
                 )
             });
             match current_cell {
@@ -125,11 +120,11 @@ impl Grid {
     }
 
     fn calcalute_change(&self) -> Vec<(usize, LifeCell)> {
-        let mut to_return = Vec::with_capacity(self.inner.len());
+        let mut to_return = Vec::with_capacity(self.all_cells.len());
         for (y, x) in all_coords(self.height, self.width) {
             let cell_count = self.count_alive_cells(y, x);
             let index = y_x_to_index(self.width, y, x);
-            let current_cell = self.inner.get(index).unwrap();
+            let current_cell = self.all_cells.get(index).unwrap();
             let new_cell_val = match (*current_cell, cell_count) {
                 (LifeCell::Alive, alive_count) if alive_count < 2 => LifeCell::Dead,
                 (LifeCell::Alive, alive_count) if (2..=3).contains(&alive_count) => LifeCell::Alive,

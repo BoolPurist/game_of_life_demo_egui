@@ -3,7 +3,10 @@ use std::{
     time::Duration,
 };
 
-use eframe::{egui, epaint::Pos2};
+use eframe::{
+    egui::{self, Button, RichText, Ui, WidgetText},
+    epaint::{Color32, Pos2},
+};
 mod grid;
 mod timer;
 use grid::{Grid, GridDrawSettings, TextData};
@@ -40,6 +43,7 @@ fn main() {
 struct GameOfLifeWindow {
     grid: Grid,
     tick_timer: Timer,
+    is_paused: bool,
 }
 
 impl GameOfLifeWindow {
@@ -50,6 +54,7 @@ impl GameOfLifeWindow {
         Self {
             grid,
             tick_timer: Timer::new(tick),
+            is_paused: false,
         }
     }
 }
@@ -61,12 +66,8 @@ impl eframe::App for GameOfLifeWindow {
                 self.grid.tick();
             }
 
-            ui.label(format!("Passed ticks: {}", self.grid.passed_tick()));
-            ui.label(format!(
-                "Tick rate: {} mili seconds",
-                self.tick_timer.interval_as_ms()
-            ));
-            ui.separator();
+            draw_stats(self, ui);
+            draw_buttons(self, ui);
 
             let y_offset = ui.available_rect_before_wrap().min.y;
             let start = Pos2 {
@@ -78,5 +79,42 @@ impl eframe::App for GameOfLifeWindow {
 
             ctx.request_repaint();
         });
+    }
+}
+
+fn draw_buttons(app: &GameOfLifeWindow, ui: &mut Ui) {
+    ui.horizontal(|ui| {
+        let is_paused = app.is_paused;
+        let pause_txt = if is_paused { "Resume" } else { "Pause" };
+        _ = ui.button(pause_txt);
+        let next_btn = Button::new("Next");
+        ui.add_enabled(is_paused, next_btn);
+        let reset_btn = Button::new("Reset").fill(Color32::RED);
+        ui.add(reset_btn);
+    });
+    ui.separator();
+}
+
+fn draw_stats(app: &GameOfLifeWindow, ui: &mut Ui) {
+    egui::Grid::new("Game of life labels")
+        .num_columns(2)
+        .spacing([40.0, 4.0])
+        .striped(true)
+        .show(ui, |ui| {
+            ui.label("Passed ticks:");
+            computed_value(ui, app.grid.passed_tick().to_string());
+            ui.end_row();
+            ui.label("Tick rate:");
+            computed_value(
+                ui,
+                format!("{} ms", app.tick_timer.interval_as_ms().to_string()),
+            );
+            ui.end_row();
+        });
+
+    ui.separator();
+
+    fn computed_value(ui: &mut Ui, text: impl Into<WidgetText>) {
+        ui.label(text.into().strong());
     }
 }
