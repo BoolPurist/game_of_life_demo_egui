@@ -75,9 +75,10 @@ impl Grid {
     pub fn tick(&mut self) {
         let to_apply = self.calcalute_change();
 
-        for (index, new_cell) in to_apply {
-            *self.all_cells.get_mut(index).unwrap() = new_cell;
-        }
+        self.all_cells
+            .iter_mut()
+            .zip(to_apply.into_iter())
+            .for_each(|(old_cell, new_cell)| *old_cell = new_cell);
 
         self.passed_ticks += 1;
     }
@@ -120,7 +121,7 @@ impl Grid {
         found_alive_adjacant
     }
 
-    fn calcalute_change(&self) -> Vec<(usize, LifeCell)> {
+    fn calcalute_change(&self) -> Vec<LifeCell> {
         let mut to_return = Vec::with_capacity(self.all_cells.len());
         for (y, x) in all_coords(self.height, self.width) {
             let cell_count = self.count_alive_cells(y, x);
@@ -134,7 +135,7 @@ impl Grid {
                 (otherwise, _) => otherwise,
             };
 
-            to_return.push((index, new_cell_val));
+            to_return.push(new_cell_val);
         }
         to_return
     }

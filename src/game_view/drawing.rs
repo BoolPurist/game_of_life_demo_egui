@@ -1,4 +1,4 @@
-use super::GameViewState;
+use super::GameView;
 use crate::constans::*;
 use eframe::egui::{self, WidgetText};
 use eframe::{
@@ -6,7 +6,7 @@ use eframe::{
     epaint::Color32,
 };
 
-pub fn draw_buttons(app: &mut GameViewState, ui: &mut Ui) {
+pub fn draw_buttons(app: &mut GameView, ui: &mut Ui) {
     ui.horizontal(|ui| {
         let pause_txt = if app.is_paused {
             BTN_RESUME_TXT
@@ -33,7 +33,7 @@ pub fn draw_buttons(app: &mut GameViewState, ui: &mut Ui) {
     ui.separator();
 }
 
-pub fn draw_stats(app: &GameViewState, ui: &mut Ui) {
+pub fn draw_stats(app: &GameView, ui: &mut Ui) {
     egui::Grid::new("Game of life labels")
         .num_columns(2)
         .spacing([40.0, 4.0])
@@ -42,8 +42,18 @@ pub fn draw_stats(app: &GameViewState, ui: &mut Ui) {
             ui.label("Passed ticks:");
             computed_value(ui, app.grid.passed_tick().to_string());
             ui.end_row();
+
             ui.label("Tick rate:");
             computed_value(ui, format!("{} ms", app.tick_timer.interval_as_ms()));
+            ui.end_row();
+
+            ui.label("State:");
+            let (state_txt, state_color) = if app.is_paused() {
+                ("Paused", Color32::YELLOW)
+            } else {
+                ("Running", Color32::GREEN)
+            };
+            computed_with_color(ui, state_txt, state_color);
             ui.end_row();
         });
 
@@ -51,5 +61,8 @@ pub fn draw_stats(app: &GameViewState, ui: &mut Ui) {
 
     fn computed_value(ui: &mut Ui, text: impl Into<WidgetText>) {
         ui.label(text.into().strong());
+    }
+    fn computed_with_color(ui: &mut Ui, text: impl Into<WidgetText>, color: Color32) {
+        ui.label(text.into().color(color).strong());
     }
 }

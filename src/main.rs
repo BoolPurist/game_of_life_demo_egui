@@ -1,20 +1,19 @@
+mod game_view;
+mod grid;
+mod timer;
+
+use game_view::GameView;
+use grid::{GridDrawSettings, TextData};
+
 use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
 
 use eframe::egui;
-mod game_view_state;
-mod grid;
-mod timer;
-
-use game_view_state::GameViewState;
-use grid::{GridDrawSettings, TextData};
 
 mod constans {
-
     pub const INITIAL_NAME: &str = "initial.txt";
-
     pub const ALIVE_CHAR: char = 'x';
     pub const DEAD_CHAR: char = '*';
     pub const MARGIN: f32 = 20.;
@@ -27,11 +26,12 @@ mod constans {
 fn get_text_input() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(constans::INITIAL_NAME)
 }
+
 fn main() {
     let intial_path = get_text_input();
 
     let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(320.0, 240.0)),
+        initial_window_size: Some(egui::vec2(640.0, 480.)),
         ..Default::default()
     };
     eframe::run_native(
@@ -48,11 +48,12 @@ fn main() {
 }
 
 struct GameOfLifeWindow {
-    view: GameViewState,
+    view: GameView,
 }
+
 impl GameOfLifeWindow {
     pub fn from_text_file(path: PathBuf, tick: Duration) -> Self {
-        let mut view = GameViewState::new(path, tick);
+        let mut view = GameView::new(path, tick);
         view.reset();
         Self { view }
     }

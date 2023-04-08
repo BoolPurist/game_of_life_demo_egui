@@ -10,14 +10,14 @@ use std::path::PathBuf;
 use std::time::Duration;
 mod drawing;
 
-pub struct GameViewState {
+pub struct GameView {
     initial_grid: Grid,
     grid: Grid,
     tick_timer: Timer,
     is_paused: bool,
 }
 
-impl GameViewState {
+impl GameView {
     pub fn new(path: PathBuf, tick: Duration) -> Self {
         let content = std::fs::read_to_string(path).expect("failed to read input text file");
         let text = TextData::new(content, DEAD_CHAR, ALIVE_CHAR);
@@ -42,6 +42,10 @@ impl GameViewState {
     pub fn resume(&mut self) {
         self.tick_timer.resume();
         self.is_paused = false;
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.is_paused
     }
 
     pub fn toogle_pause_resume(&mut self) {
