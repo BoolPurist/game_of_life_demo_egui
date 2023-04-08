@@ -1,6 +1,6 @@
 use super::GameView;
 use crate::constans::*;
-use eframe::egui::{self, WidgetText};
+use crate::draw_utils;
 use eframe::{
     egui::{Button, Ui},
     epaint::Color32,
@@ -34,35 +34,24 @@ pub fn draw_buttons(app: &mut GameView, ui: &mut Ui) {
 }
 
 pub fn draw_stats(app: &GameView, ui: &mut Ui) {
-    egui::Grid::new("Game of life labels")
-        .num_columns(2)
-        .spacing([40.0, 4.0])
-        .striped(true)
-        .show(ui, |ui| {
-            ui.label("Passed ticks:");
-            computed_value(ui, app.grid.passed_tick().to_string());
-            ui.end_row();
+    draw_utils::draw_grid(ui, "Game of life labels", |ui| {
+        ui.label("Passed ticks:");
+        draw_utils::computed_value(ui, app.grid.passed_tick().to_string());
+        ui.end_row();
 
-            ui.label("Tick rate:");
-            computed_value(ui, format!("{} ms", app.tick_timer.interval_as_ms()));
-            ui.end_row();
+        ui.label("Tick rate:");
+        draw_utils::computed_value(ui, format!("{} ms", app.tick_timer.interval_as_ms()));
+        ui.end_row();
 
-            ui.label("State:");
-            let (state_txt, state_color) = if app.is_paused() {
-                ("Paused", Color32::YELLOW)
-            } else {
-                ("Running", Color32::GREEN)
-            };
-            computed_with_color(ui, state_txt, state_color);
-            ui.end_row();
-        });
+        ui.label("State:");
+        let (state_txt, state_color) = if app.is_paused() {
+            ("Paused", Color32::YELLOW)
+        } else {
+            ("Running", Color32::GREEN)
+        };
+        draw_utils::computed_with_color(ui, state_txt, state_color);
+        ui.end_row();
+    });
 
     ui.separator();
-
-    fn computed_value(ui: &mut Ui, text: impl Into<WidgetText>) {
-        ui.label(text.into().strong());
-    }
-    fn computed_with_color(ui: &mut Ui, text: impl Into<WidgetText>, color: Color32) {
-        ui.label(text.into().color(color).strong());
-    }
 }

@@ -22,12 +22,16 @@ impl GameView {
         let content = std::fs::read_to_string(path).expect("failed to read input text file");
         let text = TextData::new(content, DEAD_CHAR, ALIVE_CHAR);
         let grid = Grid::new(text, GridDrawSettings::default());
-        Self {
+        let mut slf = Self {
             initial_grid: grid.clone(),
             grid,
             tick_timer: Timer::new(tick),
             is_paused: false,
-        }
+        };
+
+        slf.reset();
+
+        slf
     }
     pub fn reset(&mut self) {
         self.pause();

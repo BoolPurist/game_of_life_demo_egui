@@ -1,26 +1,31 @@
-use crate::game_view::GameView;
+use crate::open_view::OpenView;
+use crate::CurrentView;
 use eframe::egui;
-use std::{path::PathBuf, time::Duration};
-
 pub struct GameOfLifeWindow {
-    view: GameView,
+    view: CurrentView,
 }
 
-impl GameOfLifeWindow {
-    pub fn from_text_file(path: PathBuf, tick: Duration) -> Self {
-        let mut view = GameView::new(path, tick);
-        view.reset();
-        Self { view }
+impl Default for GameOfLifeWindow {
+    fn default() -> Self {
+        Self {
+            view: CurrentView::Open(OpenView::default()),
+        }
     }
 }
 
 impl eframe::App for GameOfLifeWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            self.view.tick_if_up();
-            self.view.draw(ui);
-
-            ctx.request_repaint();
+        egui::CentralPanel::default().show(ctx, |ui| match &mut self.view {
+            CurrentView::Game(game_view) => {
+                game_view.tick_if_up();
+                game_view.draw(ui);
+                ctx.request_repaint();
+            }
+            CurrentView::Open(open_view) => {
+                if let Some(new_view) = open_view.draw(ctx, ui) {
+                    self.view = new_view;
+                }
+            }
         });
     }
 }
