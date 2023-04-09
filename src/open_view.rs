@@ -3,7 +3,10 @@ use std::path::PathBuf;
 use eframe::egui::{self, Ui};
 use egui_file::FileDialog;
 
-use crate::{grid::Grid, CurrentView};
+use crate::{
+    grid::{text_load_error::TextLoadError, Grid},
+    CurrentView,
+};
 
 mod drawing;
 #[derive(Clone)]
@@ -30,7 +33,7 @@ pub struct OpenView {
 pub enum DataFileState {
     NotChoosen,
     Choosen { path: PathBuf },
-    Invalid { path: PathBuf, message: String },
+    Invalid { path: PathBuf, error: TextLoadError },
     Loaded { path: PathBuf, game: Grid },
 }
 

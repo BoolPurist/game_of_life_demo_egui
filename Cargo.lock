@@ -911,6 +911,7 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui_file",
+ "thiserror",
 ]
 
 [[package]]

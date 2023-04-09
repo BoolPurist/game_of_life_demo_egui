@@ -71,10 +71,13 @@ fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Optio
     } else if clicked_load {
         if let DataFileState::Choosen { .. } = &mut state.game_file_state {
             if let DataFileState::Choosen { path } = std::mem::take(&mut state.game_file_state) {
-                let file = std::fs::read_to_string(&path).unwrap();
-                let data = TextData::new(file, state.dead_char_code, state.alive_char_code);
-                let game = Grid::new(data, GridDrawSettings::default());
-                state.game_file_state = DataFileState::Loaded { path, game };
+                match TextData::new(&path, state.dead_char_code, state.alive_char_code) {
+                    Err(error) => state.game_file_state = DataFileState::Invalid { path, error },
+                    Ok(data) => {
+                        let game = Grid::new(data, GridDrawSettings::default());
+                        state.game_file_state = DataFileState::Loaded { path, game };
+                    }
+                }
             }
         }
     }
@@ -89,10 +92,10 @@ fn draw_path_and_chars_for_text(state: &mut OpenView, ui: &mut Ui) {
             draw_path_line(ui, &path.to_string_lossy(), Color32::WHITE);
             draw_cell_fields(state, ui);
         }
-        DataFileState::Invalid { path, .. } => {
+        DataFileState::Invalid { error, path } => {
             draw_path_line(ui, &path.to_string_lossy(), Color32::RED);
-
             draw_cell_fields(state, ui);
+            draw_utils::computed_with_color(ui, error.to_string(), Color32::RED);
         }
         DataFileState::Loaded { path, .. } => {
             draw_path_line(ui, &path.to_string_lossy(), Color32::GREEN);

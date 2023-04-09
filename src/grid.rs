@@ -9,6 +9,7 @@ mod outer;
 mod text_data;
 pub use outer::*;
 pub use text_data::TextData;
+pub mod text_load_error;
 
 const STROKE_WIDTH: f32 = 1.;
 
