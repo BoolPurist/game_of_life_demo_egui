@@ -8,7 +8,6 @@ mod timer;
 use crate::open_view::OpenView;
 use game_of_life_window::GameOfLifeWindow;
 use game_view::GameView;
-use grid::{GridDrawSettings, TextData};
 
 use std::path::{Path, PathBuf};
 

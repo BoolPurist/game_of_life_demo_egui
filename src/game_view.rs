@@ -3,28 +3,23 @@ use eframe::epaint::Pos2;
 
 use crate::constans::*;
 use crate::grid::Grid;
+use crate::open_view::{GatheredOpenViewData, OpenView};
 use crate::timer::Timer;
-use crate::GridDrawSettings;
-use crate::TextData;
-use std::path::PathBuf;
 use std::time::Duration;
 mod drawing;
 
 pub struct GameView {
-    initial_grid: Grid,
     grid: Grid,
     tick_timer: Timer,
     is_paused: bool,
+    previous_view: GatheredOpenViewData,
 }
 
 impl GameView {
-    pub fn new(path: PathBuf, tick: Duration) -> Self {
-        let content = std::fs::read_to_string(path).expect("failed to read input text file");
-        let text = TextData::new(content, DEAD_CHAR, ALIVE_CHAR);
-        let grid = Grid::new(text, GridDrawSettings::default());
+    pub fn new(previous_view: GatheredOpenViewData, tick: Duration) -> Self {
         let mut slf = Self {
-            initial_grid: grid.clone(),
-            grid,
+            grid: previous_view.clone_game(),
+            previous_view,
             tick_timer: Timer::new(tick),
             is_paused: false,
         };
@@ -36,7 +31,7 @@ impl GameView {
     pub fn reset(&mut self) {
         self.pause();
         self.tick_timer.reset();
-        self.grid = self.initial_grid.clone();
+        self.grid = self.previous_view.clone_game();
     }
 
     pub fn pause(&mut self) {
@@ -67,9 +62,9 @@ impl GameView {
         }
     }
 
-    pub fn draw(&mut self, ui: &mut Ui) {
+    pub fn draw(&mut self, ui: &mut Ui) -> Option<OpenView> {
         drawing::draw_stats(self, ui);
-        drawing::draw_buttons(self, ui);
+        let to_return = drawing::draw_buttons(self, ui);
 
         let y_offset = ui.available_rect_before_wrap().min.y;
         let start = Pos2 {
@@ -78,5 +73,7 @@ impl GameView {
         };
 
         self.grid.draw_at(ui, start);
+
+        to_return
     }
 }

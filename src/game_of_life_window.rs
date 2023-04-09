@@ -18,7 +18,9 @@ impl eframe::App for GameOfLifeWindow {
         egui::CentralPanel::default().show(ctx, |ui| match &mut self.view {
             CurrentView::Game(game_view) => {
                 game_view.tick_if_up();
-                game_view.draw(ui);
+                if let Some(open_view) = game_view.draw(ui) {
+                    self.view = CurrentView::Open(open_view);
+                }
                 ctx.request_repaint();
             }
             CurrentView::Open(open_view) => {

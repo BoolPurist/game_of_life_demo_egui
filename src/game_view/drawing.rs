@@ -1,12 +1,15 @@
 use super::GameView;
 use crate::constans::*;
 use crate::draw_utils;
+use crate::open_view::OpenView;
 use eframe::{
     egui::{Button, Ui},
     epaint::Color32,
 };
 
-pub fn draw_buttons(app: &mut GameView, ui: &mut Ui) {
+pub fn draw_buttons(app: &mut GameView, ui: &mut Ui) -> Option<OpenView> {
+    let mut to_return = None;
+
     ui.horizontal(|ui| {
         let pause_txt = if app.is_paused {
             BTN_RESUME_TXT
@@ -29,8 +32,16 @@ pub fn draw_buttons(app: &mut GameView, ui: &mut Ui) {
         if ui.add(reset_btn).clicked() {
             app.reset();
         };
+        let back_btn = Button::new("Back").fill(Color32::YELLOW);
+        if ui.add(back_btn).clicked() {
+            app.pause();
+            to_return = Some(OpenView::new(app.previous_view.clone()));
+        };
     });
+
     ui.separator();
+
+    to_return
 }
 
 pub fn draw_stats(app: &GameView, ui: &mut Ui) {
