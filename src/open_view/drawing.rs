@@ -43,16 +43,13 @@ fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Optio
             DataFileState::Invalid { .. } => (false, false),
             DataFileState::Loaded { .. } => (false, true),
         };
-        if enable_load_button {
-            clicked_load = ui
-                .add_enabled(enable_load_button, Button::new(BTN_TEXT_LOAD))
-                .clicked();
-        }
-        if enable_play_button {
-            clicked_play = ui
-                .add_enabled(enable_play_button, Button::new(BTN_TEXT_PLAY))
-                .clicked();
-        }
+
+        clicked_load = ui
+            .add_enabled(enable_load_button, Button::new(BTN_TEXT_LOAD))
+            .clicked();
+        clicked_play = ui
+            .add_enabled(enable_play_button, Button::new(BTN_TEXT_PLAY))
+            .clicked();
     });
 
     if clicked_play {
