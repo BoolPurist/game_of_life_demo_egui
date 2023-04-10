@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 eframe = "0.21.3"
 egui_file = "0.8.0"
+getset = "0.1.2"
 thiserror = "1.0.40"

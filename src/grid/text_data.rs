@@ -2,7 +2,7 @@ use std::{io::ErrorKind, path::Path};
 
 use crate::grid::text_load_error::TextLoadError;
 
-use super::LifeCell;
+use super::{dead_alive_char_cells::DeadAliveCharCell, LifeCell};
 
 pub struct TextData {
     dead_char: char,
@@ -13,7 +13,7 @@ pub struct TextData {
 }
 
 impl TextData {
-    pub fn new(path: &Path, dead_char: char, alive_char: char) -> Result<Self, TextLoadError> {
+    pub fn new(path: &Path, dead_alive: DeadAliveCharCell) -> Result<Self, TextLoadError> {
         let text = match std::fs::read_to_string(path) {
             Err(error) if error.kind() == ErrorKind::NotFound => {
                 Err(TextLoadError::NoFileFound(path.to_owned()))
@@ -27,6 +27,7 @@ impl TextData {
         let height = text.lines().count();
         let mut text_date = Vec::with_capacity(height * width);
 
+        let (dead_char, alive_char) = (dead_alive.dead(), dead_alive.alive());
         for next_line in text.lines() {
             validate_row(next_line, width, dead_char, alive_char)?;
             let next_line: Vec<char> = next_line.chars().collect();
