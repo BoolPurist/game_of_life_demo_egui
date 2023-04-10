@@ -6,8 +6,6 @@ use eframe::egui::{self, Button, Ui};
 use eframe::epaint::Color32;
 use egui_file::FileDialog;
 
-const BTN_TEXT_LOAD: &str = "Load";
-const BTN_TEXT_PLAY: &str = "Play";
 pub fn draw_input_mask(
     state: &mut OpenView,
     ui: &mut Ui,
@@ -15,6 +13,7 @@ pub fn draw_input_mask(
 ) -> Option<CurrentView> {
     draw_path_and_chars_for_text(state, ui);
 
+    ui.separator();
     draw_buttons(state, ui, ctx)
 }
 
@@ -23,7 +22,10 @@ fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Optio
     let mut clicked_play = false;
 
     ui.horizontal(|ui| {
-        if ui.button("Choose").clicked() {
+        if ui
+            .button(draw_utils::create_rich_text(BTN_CHOOSE_TXT))
+            .clicked()
+        {
             let mut dialog = FileDialog::open_file(None);
             dialog.open();
             state.open_file_dialog = Some(dialog);
@@ -45,10 +47,16 @@ fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Optio
         };
 
         clicked_load = ui
-            .add_enabled(enable_load_button, Button::new(BTN_TEXT_LOAD))
+            .add_enabled(
+                enable_load_button,
+                Button::new(draw_utils::create_rich_text(BTN_TEXT_LOAD)),
+            )
             .clicked();
         clicked_play = ui
-            .add_enabled(enable_play_button, Button::new(BTN_TEXT_PLAY))
+            .add_enabled(
+                enable_play_button,
+                Button::new(draw_utils::create_rich_text(BTN_TEXT_PLAY)),
+            )
             .clicked();
     });
 
@@ -84,29 +92,29 @@ fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Optio
 
 fn draw_path_and_chars_for_text(state: &mut OpenView, ui: &mut Ui) {
     draw_utils::draw_grid(ui, "Input grid", |ui| match &state.game_file_state {
-        DataFileState::NotChoosen => draw_path_line(ui, "<Missing Path>", Color32::YELLOW),
+        DataFileState::NotChoosen => draw_path_line(ui, MISSING_PATH_TXT, WARN_COLOR),
         DataFileState::Choosen { path, .. } => {
-            draw_path_line(ui, &path.to_string_lossy(), Color32::WHITE);
+            draw_path_line(ui, &path.to_string_lossy(), NORMAL_COLOR);
             draw_cell_fields(state, ui);
         }
         DataFileState::Invalid { error, path } => {
-            draw_path_line(ui, &path.to_string_lossy(), Color32::RED);
+            draw_path_line(ui, &path.to_string_lossy(), ERR_COLOR);
             draw_cell_fields(state, ui);
-            draw_utils::computed_with_color(ui, error.to_string(), Color32::RED);
+            draw_utils::computed_with_color(ui, error.to_string(), ERR_COLOR);
         }
         DataFileState::Loaded { path, .. } => {
-            draw_path_line(ui, &path.to_string_lossy(), Color32::GREEN);
+            draw_path_line(ui, &path.to_string_lossy(), SUCCESS_COLOR);
             draw_cell_fields(state, ui);
         }
     });
 
     fn draw_cell_fields(state: &OpenView, ui: &mut Ui) {
         ui.label("Char alive cell:");
-        draw_utils::computed_value(ui, state.alive_char_code.to_string());
+        draw_utils::computed_value(ui, &state.alive_char_code.to_string());
         ui.end_row();
 
         ui.label("Char dead cell:");
-        draw_utils::computed_value(ui, state.dead_char_code.to_string());
+        draw_utils::computed_value(ui, &state.dead_char_code.to_string());
         ui.end_row();
     }
 }
