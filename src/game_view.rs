@@ -5,7 +5,6 @@ use crate::constans::*;
 use crate::grid::Grid;
 use crate::open_view::{GatheredOpenViewData, OpenView};
 use crate::timer::Timer;
-use std::time::Duration;
 mod drawing;
 
 pub struct GameView {
@@ -16,11 +15,11 @@ pub struct GameView {
 }
 
 impl GameView {
-    pub fn new(previous_view: GatheredOpenViewData, tick: Duration) -> Self {
+    pub fn new(previous_view: GatheredOpenViewData) -> Self {
         let mut slf = Self {
             grid: previous_view.clone_game(),
+            tick_timer: Timer::new(previous_view.time_interval().into()),
             previous_view,
-            tick_timer: Timer::new(tick),
             is_paused: false,
         };
 
