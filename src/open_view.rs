@@ -1,123 +1,28 @@
-use std::{fmt::Display, num::ParseIntError, path::PathBuf, time::Duration};
-
 use eframe::egui::{self, Ui};
 use egui_file::FileDialog;
-use getset::CopyGetters;
-use thiserror::Error;
 
-use crate::{
-    constans::TICK_DURATION,
-    grid::{text_load_error::TextLoadError, Grid, InvalidCharCell},
-    CurrentView,
-};
+use crate::{constans::TICK_DURATION, CurrentView};
 
+mod data_file_state;
 mod drawing;
+mod gathered_open_view_data;
+mod time;
+mod validation_error;
 
-#[derive(Clone, Copy, Debug)]
-pub enum TimeUnit {
-    Seconds(u32),
-    MsSeconds(u32),
-}
-
-impl Display for TimeUnit {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Seconds(secs) | Self::MsSeconds(secs) => write!(f, "{}", secs),
-        }
-    }
-}
-
-#[derive(Clone, CopyGetters)]
-pub struct GatheredOpenViewData {
-    dead_char_code: char,
-    alive_char_code: char,
-    #[getset(get_copy = "pub")]
-    time_interval: TimeUnit,
-    selected_time: SelectedTime,
-    game: Grid,
-    path: PathBuf,
-}
-
-impl GatheredOpenViewData {
-    pub fn clone_game(&self) -> Grid {
-        self.game.clone()
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SelectedTime {
-    Seconds,
-    MsSeconds,
-}
-impl Default for SelectedTime {
-    fn default() -> Self {
-        Self::Seconds
-    }
-}
-impl Display for SelectedTime {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Seconds => write!(f, "Seconds"),
-            Self::MsSeconds => write!(f, "Mili seconds"),
-        }
-    }
-}
+pub use data_file_state::DataFileState;
+pub use gathered_open_view_data::GatheredOpenViewData;
+pub use time::{SelectedTime, TimeUnit};
+pub use validation_error::ValidationError;
 
 pub struct OpenView {
     open_file_dialog: Option<FileDialog>,
     dead_char_code: char,
     alive_char_code: char,
-    selected_time: SelectedTime,
     dead_char_input: String,
     alive_char_input: String,
+    selected_time: SelectedTime,
     time_interval: String,
     game_file_state: DataFileState,
-}
-
-#[derive(Debug, Error)]
-pub enum ValidationError {
-    #[error("{0}")]
-    FailureInLoad(#[from] TextLoadError),
-    #[error("Time must be a positive number")]
-    NotNumberForTime,
-    #[error("{0}")]
-    InvalidChars(#[from] InvalidCharCell),
-}
-
-impl From<ParseIntError> for ValidationError {
-    fn from(_value: ParseIntError) -> Self {
-        Self::NotNumberForTime
-    }
-}
-
-pub enum DataFileState {
-    NotChoosen,
-    Choosen {
-        path: PathBuf,
-    },
-    Invalid {
-        path: PathBuf,
-        error: ValidationError,
-    },
-    Loaded {
-        path: PathBuf,
-        game: Grid,
-    },
-}
-
-impl Default for DataFileState {
-    fn default() -> Self {
-        Self::NotChoosen
-    }
-}
-
-impl From<TimeUnit> for Duration {
-    fn from(value: TimeUnit) -> Self {
-        match value {
-            TimeUnit::Seconds(secs) => Duration::from_secs(secs as u64),
-            TimeUnit::MsSeconds(ms_secs) => Duration::from_millis(ms_secs as u64),
-        }
-    }
 }
 
 impl Default for OpenView {
@@ -145,14 +50,12 @@ impl OpenView {
     pub fn new(gathered: GatheredOpenViewData) -> Self {
         let dead_char_code = gathered.dead_char_code;
         let alive_char_code = gathered.alive_char_code;
+        let (path, game) = (gathered.path, gathered.game);
         Self {
             dead_char_code,
             alive_char_code,
-            game_file_state: DataFileState::Loaded {
-                game: gathered.game,
-                path: gathered.path,
-            },
             selected_time: gathered.selected_time,
+            game_file_state: DataFileState::Loaded { path, game },
             open_file_dialog: None,
             dead_char_input: dead_char_code.into(),
             alive_char_input: alive_char_code.into(),

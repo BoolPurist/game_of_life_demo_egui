@@ -18,7 +18,7 @@ impl GameView {
     pub fn new(previous_view: GatheredOpenViewData) -> Self {
         let mut slf = Self {
             grid: previous_view.clone_game(),
-            tick_timer: Timer::new(previous_view.time_interval().into()),
+            tick_timer: Timer::new(previous_view.time_interval.into()),
             previous_view,
             is_paused: false,
         };
