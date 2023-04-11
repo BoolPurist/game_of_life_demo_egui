@@ -29,7 +29,6 @@ mod constans {
     pub const MARGIN: f32 = 20.;
     pub const TICK_DURATION: Duration = Duration::from_secs(1);
 
-    pub const BTN_TEXT_LOAD: &str = "Load";
     pub const BTN_TEXT_PLAY: &str = "Play";
     pub const BTN_RESUME_TXT: &str = "Resume";
     pub const BTN_PAUSE_TXT: &str = "Pause";
@@ -44,7 +43,6 @@ mod constans {
 
     pub const ERR_COLOR: Color32 = Color32::RED;
     pub const WARN_COLOR: Color32 = Color32::YELLOW;
-    pub const SUCCESS_COLOR: Color32 = Color32::GREEN;
     pub const NORMAL_COLOR: Color32 = Color32::WHITE;
 }
 

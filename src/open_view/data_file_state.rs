@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use crate::grid::Grid;
-
 use super::ValidationError;
 
 pub enum DataFileState {
@@ -13,14 +11,18 @@ pub enum DataFileState {
         path: PathBuf,
         error: ValidationError,
     },
-    Loaded {
-        path: PathBuf,
-        game: Grid,
-    },
 }
 
 impl Default for DataFileState {
     fn default() -> Self {
         Self::NotChoosen
+    }
+}
+impl From<(PathBuf, ValidationError)> for DataFileState {
+    fn from(value: (PathBuf, ValidationError)) -> Self {
+        DataFileState::Invalid {
+            path: value.0,
+            error: value.1,
+        }
     }
 }

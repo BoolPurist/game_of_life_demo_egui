@@ -50,23 +50,16 @@ impl OpenView {
     pub fn new(gathered: GatheredOpenViewData) -> Self {
         let dead_char_code = gathered.dead_char_code;
         let alive_char_code = gathered.alive_char_code;
-        let (path, game) = (gathered.path, gathered.game);
+        let path = gathered.path;
         Self {
             dead_char_code,
             alive_char_code,
             selected_time: gathered.selected_time,
-            game_file_state: DataFileState::Loaded { path, game },
+            game_file_state: DataFileState::Choosen { path },
             open_file_dialog: None,
             dead_char_input: dead_char_code.into(),
             alive_char_input: alive_char_code.into(),
             time_interval: gathered.time_interval.to_string(),
         }
-    }
-}
-
-fn time_unit_from_selection(selected_kind: SelectedTime, amount: u32) -> TimeUnit {
-    match selected_kind {
-        SelectedTime::Seconds => TimeUnit::Seconds(amount),
-        SelectedTime::MsSeconds => TimeUnit::MsSeconds(amount),
     }
 }

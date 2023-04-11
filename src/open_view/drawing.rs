@@ -1,9 +1,9 @@
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use super::{DataFileState, GatheredOpenViewData, OpenView};
+use super::{DataFileState, GatheredOpenViewData, OpenView, TimeUnit};
 use crate::grid::{DeadAliveCharCell, Grid, GridDrawSettings, TextData};
-use crate::open_view::SelectedTime;
+use crate::open_view::{SelectedTime, ValidationError};
 use crate::{constans::*, draw_utils};
 use crate::{game_view::GameView, CurrentView};
 use eframe::egui::{self, Button, Ui};
@@ -22,10 +22,25 @@ pub fn draw_input_mask(
 }
 
 fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Option<CurrentView> {
-    let mut clicked_load = false;
     let mut clicked_play = false;
 
     ui.horizontal(|ui| {
+        file_dialog_for_game_file(ui, ctx, state);
+        clicked_play = draw_play_btns(ui, state);
+    });
+
+    if clicked_play {
+        match try_to_play_game(state) {
+            Err(error) => {
+                state.game_file_state = error;
+            }
+            Ok(to_maybe_play) => return to_maybe_play,
+        }
+    }
+
+    return None;
+
+    fn file_dialog_for_game_file(ui: &mut Ui, ctx: &egui::Context, state: &mut OpenView) {
         if ui
             .button(draw_utils::create_rich_text(BTN_CHOOSE_TXT))
             .clicked()
@@ -42,87 +57,89 @@ fn draw_buttons(state: &mut OpenView, ui: &mut Ui, ctx: &egui::Context) -> Optio
                 }
             }
         }
+    }
 
-        let (enable_load_button, enable_play_button) = match &state.game_file_state {
-            DataFileState::NotChoosen => (false, false),
-            DataFileState::Choosen { .. } => (true, false),
-            DataFileState::Invalid { .. } => (true, false),
-            DataFileState::Loaded { .. } => (false, true),
+    fn draw_play_btns(ui: &mut Ui, state: &OpenView) -> bool {
+        let enable_play_button = match &state.game_file_state {
+            DataFileState::NotChoosen => false,
+            DataFileState::Choosen { .. } => true,
+            DataFileState::Invalid { .. } => true,
         };
 
-        clicked_load = ui
-            .add_enabled(
-                enable_load_button,
-                Button::new(draw_utils::create_rich_text(BTN_TEXT_LOAD)),
-            )
-            .clicked();
-        clicked_play = ui
-            .add_enabled(
-                enable_play_button,
-                Button::new(draw_utils::create_rich_text(BTN_TEXT_PLAY)),
-            )
-            .clicked();
-    });
+        ui.add_enabled(
+            enable_play_button,
+            Button::new(draw_utils::create_rich_text(BTN_TEXT_PLAY)),
+        )
+        .clicked()
+    }
 
-    if clicked_play {
-        if let DataFileState::Loaded { .. } = &state.game_file_state {
-            if let DataFileState::Loaded { game, path } = std::mem::take(&mut state.game_file_state)
+    fn try_to_play_game(state: &mut OpenView) -> Result<Option<CurrentView>, DataFileState> {
+        let Some(path) = try_query_loaded_file(state) else {
+            return Ok(None);
+        };
+
+        let valid_number = try_parse_interval_time(state, &path)?;
+        let dead_alive_chars = validate_given_chars_for_game(state, &path)?;
+        let text_data = validate_file_content(dead_alive_chars, &path)?;
+        let time_interval = time_unit_from_selection(state.selected_time, valid_number);
+        let game = Grid::new(text_data, GridDrawSettings::default());
+
+        let gathered = GatheredOpenViewData {
+            alive_char_code: state.alive_char_code,
+            dead_char_code: state.dead_char_code,
+            game,
+            path,
+            selected_time: state.selected_time,
+            time_interval,
+        };
+        return Ok(Some(CurrentView::Game(GameView::new(gathered))));
+
+        fn try_query_loaded_file(state: &mut OpenView) -> Option<PathBuf> {
+            if let DataFileState::Choosen { .. } | DataFileState::Invalid { .. } =
+                &state.game_file_state
             {
-                match state.time_interval.parse() {
-                    Ok(valid_number) => {
-                        let time_interval =
-                            super::time_unit_from_selection(state.selected_time, valid_number);
-                        let gathered = GatheredOpenViewData {
-                            alive_char_code: state.alive_char_code,
-                            dead_char_code: state.dead_char_code,
-                            game,
-                            path,
-                            selected_time: state.selected_time,
-                            time_interval,
-                        };
-                        return Some(CurrentView::Game(GameView::new(gathered)));
-                    }
-                    Err(error) => {
-                        state.game_file_state = DataFileState::Invalid {
-                            path,
-                            error: error.into(),
-                        };
-                    }
+                if let DataFileState::Choosen { path } | DataFileState::Invalid { path, .. } =
+                    std::mem::take(&mut state.game_file_state)
+                {
+                    return Some(path);
                 }
             }
+
+            None
         }
-    } else if clicked_load {
-        if let DataFileState::Choosen { .. } | DataFileState::Invalid { .. } =
-            &mut state.game_file_state
-        {
-            if let DataFileState::Choosen { path } | DataFileState::Invalid { path, .. } =
-                std::mem::take(&mut state.game_file_state)
-            {
-                match DeadAliveCharCell::new(&state.dead_char_input, &state.alive_char_input) {
-                    Err(error) => {
-                        state.game_file_state = DataFileState::Invalid {
-                            path,
-                            error: error.into(),
-                        };
-                    }
-                    Ok(valid_dead_alive) => match TextData::new(&path, valid_dead_alive) {
-                        Err(error) => {
-                            state.game_file_state = DataFileState::Invalid {
-                                path,
-                                error: error.into(),
-                            }
-                        }
-                        Ok(data) => {
-                            let game = Grid::new(data, GridDrawSettings::default());
-                            state.game_file_state = DataFileState::Loaded { path, game };
-                        }
-                    },
-                }
+
+        fn try_parse_interval_time(
+            state: &mut OpenView,
+            path: &Path,
+        ) -> Result<u32, DataFileState> {
+            match state.time_interval.parse() {
+                Ok(valid_number) => Ok(valid_number),
+                Err(error) => Err(DataFileState::Invalid {
+                    path: path.to_owned(),
+                    error: error.into(),
+                }),
+            }
+        }
+        fn validate_file_content(
+            dead_alive_cell_chars: DeadAliveCharCell,
+            path: &Path,
+        ) -> Result<TextData, (PathBuf, ValidationError)> {
+            match TextData::new(path, dead_alive_cell_chars) {
+                Err(error) => Err((path.to_owned(), error.into())),
+                Ok(data) => Ok(data),
             }
         }
     }
 
-    None
+    fn validate_given_chars_for_game(
+        state: &mut OpenView,
+        path: &Path,
+    ) -> Result<DeadAliveCharCell, (PathBuf, ValidationError)> {
+        match DeadAliveCharCell::new(&state.dead_char_input, &state.alive_char_input) {
+            Err(error) => Err((path.to_owned(), error.into())),
+            Ok(valid_dead_alive) => Ok(valid_dead_alive),
+        }
+    }
 }
 
 fn draw_path_and_chars_for_text(state: &mut OpenView, ui: &mut Ui) {
@@ -133,6 +150,7 @@ fn draw_path_and_chars_for_text(state: &mut OpenView, ui: &mut Ui) {
         SelectedTime::Seconds,
         None,
     );
+
     draw_utils::draw_grid(ui, "Input grid", |ui| {
         dead_alive_input = match &state.game_file_state {
             DataFileState::NotChoosen => {
@@ -150,10 +168,6 @@ fn draw_path_and_chars_for_text(state: &mut OpenView, ui: &mut Ui) {
                 draw_cell_fields(state, ui)
             }
             DataFileState::Invalid { error, path } => draw_error_case(ui, state, error, path),
-            DataFileState::Loaded { path, .. } => {
-                draw_path_line(ui, &path.to_string_lossy(), SUCCESS_COLOR);
-                draw_cell_fields(state, ui)
-            }
         };
     });
 
@@ -179,7 +193,7 @@ fn draw_path_and_chars_for_text(state: &mut OpenView, ui: &mut Ui) {
 
         let mut selected_time = state.selected_time;
         egui::ComboBox::from_label("Determine the used time unit")
-            .selected_text(format!("{:?}", selected_time))
+            .selected_text(format!("{}", selected_time))
             .show_ui(ui, |ui| {
                 ui.selectable_value(&mut selected_time, SelectedTime::Seconds, "Seconds");
                 ui.selectable_value(&mut selected_time, SelectedTime::MsSeconds, "Miliseconds");
@@ -227,4 +241,11 @@ fn draw_path_line(ui: &mut Ui, message: &str, color: Color32) {
     draw_utils::computed_with_color(ui, message, color);
 
     ui.end_row();
+}
+
+fn time_unit_from_selection(selected_kind: SelectedTime, amount: u32) -> TimeUnit {
+    match selected_kind {
+        SelectedTime::Seconds => TimeUnit::Seconds(amount),
+        SelectedTime::MsSeconds => TimeUnit::MsSeconds(amount),
+    }
 }
